@@ -88,14 +88,18 @@
         if (query.trim().length < 2) { hideSuggestions(which); return; }
         try {
           const data = await api({
-            action: "query", list: "search", srsearch: query,
-            srnamespace: 0, srlimit: 8, srprop: "snippet"
+            action: "query", generator: "search", gsrsearch: query,
+            gsrnamespace: 0, gsrlimit: 8,
+            prop: "pageprops|extracts", exintro: 1, explaintext: 1,
+            exchars: 180
           });
-          // Use OpenSearch-like titles from the search API; snippets are intentionally plain text.
-          const results = data.query.search.map(item => ({
-            title: item.title,
-            description: item.snippet.replace(/<[^>]*>/g, "").replace(/&quot;/g, '"').replace(/&amp;/g, "&")
-          }));
+          const results = Object.values(data.query.pages || {})
+            .sort((a, b) => a.index - b.index)
+            .filter(page => !Object.prototype.hasOwnProperty.call(page.pageprops || {}, "disambiguation"))
+            .map(page => ({
+              title: page.title,
+              description: page.pageprops?.["wikibase-shortdesc"] || page.extract || ""
+            }));
           if ((which === "src" ? srcInput : dstInput).value.trim() === query.trim()) showSuggestions(which, results);
         } catch (_) { hideSuggestions(which); }
       }
@@ -131,12 +135,27 @@
         if (!title) throw new Error("Please choose both a starting page and a destination.");
         const data = await api({
           action: "query", titles: title, redirects: 1,
-          prop: "info", inprop: "url"
+          prop: "info|pageprops", inprop: "url"
         });
         const page = Object.values(data.query.pages)[0];
         if (!page || page.missing !== undefined) throw new Error(`Couldn't find the Wikipedia page "${title}".`);
         if (page.ns !== 0) throw new Error("Please choose an article from Wikipedia's main namespace.");
+        if (Object.prototype.hasOwnProperty.call(page.pageprops || {}, "disambiguation")) {
+          throw new Error(`"${page.title}" is a disambiguation page. Please choose a specific article.`);
+        }
         return page.title;
+      }
+      async function resolveArticle(raw) {
+        const data = await api({
+          action: "query", titles: raw, redirects: 1,
+          prop: "info|pageprops"
+        });
+        const page = Object.values(data.query.pages)[0];
+        if (!page || page.missing !== undefined) throw new Error(`Couldn't find the Wikipedia page "${raw}".`);
+        return {
+          title: page.title,
+          isDisambiguation: Object.prototype.hasOwnProperty.call(page.pageprops || {}, "disambiguation")
+        };
       }
 
       function setLoading(message) {
@@ -221,10 +240,18 @@
 
       async function loadArticle(title, isHop) {
         const request = ++state.requestId;
-        setLoading("Loading " + title + "…");
+        $("readerMessage").textContent = "Loading " + title + "…";
         try {
+          const resolved = await resolveArticle(title);
+          if (request !== state.requestId) return;
+          if (resolved.isDisambiguation) {
+            $("readerMessage").textContent = `"${resolved.title}" is a disambiguation page. Choose a specific article link; no hop was counted.`;
+            if (!isHop) throw new Error("Choose a specific article instead of a disambiguation page.");
+            return;
+          }
+          if (!state.current) setLoading("Loading " + resolved.title + "…");
           const data = await api({
-            action: "parse", page: title, prop: "text",
+            action: "parse", page: resolved.title, prop: "text",
             disableeditsection: 1, disabletoc: 0, formatversion: 2
           });
           if (request !== state.requestId) return;
@@ -237,6 +264,7 @@
           $("hopCount").textContent = state.hops;
           $("currentTitle").textContent = canonical;
           $("articleTitle").textContent = canonical;
+          $("readerMessage").textContent = "Choose a link to hop.";
           $("sourceLink").href = wikiUrl(canonical);
           $("articleBody").replaceChildren(...Array.from(sanitizeAndPrepare(data.parse.text).childNodes));
           renderHistory();
@@ -244,6 +272,10 @@
           $("articleBody").scrollIntoView({ behavior: "smooth", block: "start" });
         } catch (error) {
           if (request !== state.requestId) return;
+          if (isHop && state.current) {
+            $("readerMessage").textContent = `Couldn't load "${title}"; no hop was counted. Please try another link.`;
+            return;
+          }
           $("articleBody").innerHTML = `<div class="loading">Couldn't load this article.<br><small>${escapeHtml(error.message)}</small><br><br><button class="secondary" id="retryBtn">Try again</button></div>`;
           $("retryBtn").addEventListener("click", () => loadArticle(title, false));
         }
