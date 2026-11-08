@@ -3,22 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#17253b">
+  <meta name="theme-color" content="#f7f0dd">
   <title>Wikihops — the Wikipedia link game</title>
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
 <body>
   <main class="shell">
-    <header class="topbar">
-      <div class="brand">WIKI<span>HOPS</span></div>
-      <div class="top-note">Wikipedia link game</div>
-    </header>
-
-    <section class="hero">
-      <h1>Find the connection.</h1>
+    <header class="masthead">
+      <h1 class="brand">WIKI<span>HOPS</span></h1>
       <p>Navigate from one Wikipedia article to another using as few links as possible.</p>
-    </section>
+    </header>
 
     <section class="setup" id="setup">
       <div class="route-grid">
@@ -51,9 +46,7 @@
     </section>
 
     <section class="gamebar" id="gamebar">
-      <div class="stats">
-        <div class="stat"><strong id="hopCount">0</strong><span>Hops taken</span></div>
-      </div>
+      <div class="stat"><strong id="hopCount">0</strong><span>Hops taken</span></div>
       <div class="target"><span>Target</span><b id="targetName">—</b></div>
       <button class="secondary" id="restartBtn" type="button">New game</button>
     </section>
