@@ -118,8 +118,46 @@ h1 { margin: 0; font-size: clamp(32px, 4.3vw, 47px); line-height: .98; letter-sp
 .article-body th, .article-body td { padding: 5px; border: 1px solid #a2a9b1; }
 .article-body img { max-width: 100%; height: auto; }
 .article-body figure, .article-body .thumb { max-width: min(42%, 300px); }
-.article-body .thumb.tright, .article-body figure[typeof*="mw:File/Thumb"] { float: right; margin: 0 0 12px 18px; }
-.article-body .thumb.tleft { float: left; margin: 0 18px 12px 0; }
+.article-body .thumb.tright, .article-body .thumb.floatright,
+.article-body figure[typeof*="mw:File/Thumb"] { float: right; clear: right; margin: .5em 0 1.3em 1.4em; }
+.article-body figure[typeof*="mw:File/Thumb"] {
+  display: table;
+  width: 220px;
+  text-align: center;
+  border: 1px solid #c8ccd1;
+  border-collapse: collapse;
+  background: #f8f9fa;
+}
+.article-body figure[typeof*="mw:File/Thumb"] figcaption { padding: 4px 6px; font-size: 88%; line-height: 1.4; }
+.article-body .thumb.tleft, .article-body .thumb.floatleft { float: left; clear: left; margin: .5em 1.4em 1.3em 0; }
+.article-body ul.gallery {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin: 1em 0;
+  padding: 0;
+  list-style: none;
+}
+.article-body .gallerybox {
+  box-sizing: border-box;
+  flex: 0 1 195px;
+  max-width: 100%;
+  margin: 0;
+  padding: 4px;
+  text-align: center;
+}
+.article-body .gallerybox .thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 100%;
+  margin: 0 auto .4em;
+}
+.article-body .gallerybox .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.article-body .gallerytext { padding: 0 .4em; font-size: 88%; line-height: 1.4; }
 .article-body .infobox { float: right; clear: right; max-width: min(42%, 320px); margin: 0 0 14px 18px; padding: 7px; background: #f8f9fa; border: 1px solid #a2a9b1; font-size: 12px; }
 
 /* Wikipedia's {{Sidebar}} template: the series panel at the top of articles.
@@ -199,6 +237,7 @@ h1 { margin: 0; font-size: clamp(32px, 4.3vw, 47px); line-height: .98; letter-sp
   .article-top h2 { font-size: 26px; }
   .article-body { padding: 14px 16px 25px; font-size: 14px; }
   .article-body .infobox, .article-body .thumb, .article-body figure { float: none !important; max-width: 100% !important; margin: 12px auto !important; }
+  .article-body .gallerybox .thumb { margin: 0 auto .4em !important; }
   .article-body table.sidebar {
     float: none !important;
     clear: both;
