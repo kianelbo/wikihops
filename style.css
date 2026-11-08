@@ -1,0 +1,209 @@
+:root {
+  color-scheme: light;
+  --page: #eef1ef;
+  --surface: #ffffff;
+  --ink: #17253b;
+  --muted: #647184;
+  --line: #cbd3d8;
+  --blue: #2458d3;
+  --blue-soft: #e8edff;
+  --coral: #e9674d;
+  --coral-soft: #fff0eb;
+  --lime: #d9ed72;
+  --success: #18735e;
+  --success-soft: #e5f3ee;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  background: var(--page);
+  font: 15px/1.45 Arial, Helvetica, sans-serif;
+}
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: wait; opacity: .55; }
+.shell { width: min(1100px, calc(100% - 48px)); margin: 0 auto; padding: 0 0 42px; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 calc((min(1100px, 100vw - 48px) - 100vw) / 2) 35px;
+  padding: 17px max(24px, calc((100vw - 1100px) / 2));
+  color: #fff;
+  background: var(--ink);
+  border-bottom: 4px solid var(--lime);
+}
+.brand { font-size: 22px; font-weight: 900; letter-spacing: -.06em; }
+.brand span { color: var(--lime); }
+.top-note { color: #c4ceda; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+
+.hero { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 0 0 24px; }
+h1 { margin: 0; font-size: clamp(32px, 4.3vw, 47px); line-height: .98; letter-spacing: -.06em; }
+.hero p { max-width: 340px; margin: 0; color: var(--muted); font-size: 13px; }
+.setup { margin-bottom: 21px; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--blue); }
+.route-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+.route-card { min-width: 0; }
+.route-label { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .15em; }
+.route-label::before { content: ""; width: 8px; height: 8px; background: var(--blue); }
+.destination .route-label::before { background: var(--coral); }
+.input-row { display: flex; gap: 8px; }
+.autocomplete { position: relative; flex: 1; min-width: 0; }
+.page-input {
+  width: 100%; min-width: 0; padding: 12px 3px;
+  color: var(--ink); background: #fff; border: 0; border-bottom: 2px solid #aeb9c6;
+  outline: none; border-radius: 0;
+}
+.page-input:focus { border-bottom-color: var(--blue); }
+.destination .page-input:focus { border-bottom-color: var(--coral); }
+.page-input:disabled { background: #f2f4f5; color: #5b6470; }
+.random-btn { flex: 0 0 42px; border: 1px solid var(--line); border-radius: 0; color: var(--ink); background: #f3f5f6; font-size: 20px; }
+.random-btn:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+.destination .random-btn:hover:not(:disabled) { border-color: var(--coral); color: var(--coral); }
+.suggestions {
+  position: absolute; z-index: 20; top: calc(100% + 1px); left: 0; right: 0;
+  display: none; max-height: 280px; overflow: auto; background: #fff;
+  border: 1px solid var(--ink); border-top: 3px solid var(--blue);
+}
+.destination .suggestions { border-top-color: var(--coral); }
+.suggestions.open { display: block; }
+.suggestion { display: block; width: 100%; padding: 9px 10px; text-align: left; color: var(--ink); background: #fff; border: 0; border-bottom: 1px solid #e7ebee; }
+.suggestion:hover, .suggestion.active { background: var(--blue-soft); }
+.destination .suggestion:hover, .destination .suggestion.active { background: var(--coral-soft); }
+.suggestion small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+.setup-footer { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 19px; padding-top: 14px; border-top: 1px solid var(--line); }
+.hint { color: var(--muted); font-size: 11px; }
+.primary { padding: 12px 21px; border: 1px solid var(--blue); border-radius: 0; color: #fff; background: var(--blue); font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+.primary:hover:not(:disabled) { color: var(--ink); background: var(--lime); border-color: var(--lime); }
+.error { min-height: 0; margin-top: 8px; color: #b83c2b; font-size: 12px; }
+
+.gamebar {
+  display: none; align-items: center; gap: 22px; flex-wrap: wrap;
+  margin: 0 0 19px; padding: 12px 15px; color: #fff; background: var(--ink);
+  border-left: 5px solid var(--lime);
+}
+.gamebar.visible { display: flex; }
+.stats { display: flex; align-items: baseline; gap: 22px; }
+.stat { display: flex; align-items: baseline; gap: 8px; }
+.stat strong { color: var(--lime); font-size: 27px; line-height: 1; letter-spacing: -.06em; }
+.stat span { color: #c4ceda; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+.target { flex: 1; min-width: 0; font-size: 12px; overflow-wrap: anywhere; }
+.target span { margin-right: 8px; color: #c4ceda; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+.target b { color: #ff9a82; }
+.secondary { padding: 8px 11px; color: #fff; background: transparent; border: 1px solid #8795a9; border-radius: 0; font-size: 11px; font-weight: 700; }
+.secondary:hover { color: var(--ink); background: var(--lime); border-color: var(--lime); }
+
+.reader-wrap { display: none; }
+.reader-wrap.visible { display: block; }
+.reader-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 9px; color: var(--muted); border-bottom: 1px solid var(--line); font-size: 11px; }
+.reader-head strong { color: var(--ink); font-size: 13px; }
+.article-card { color: #202122; background: #fff; border: 1px solid #c8ccd1; border-top: 0; }
+.article-top { padding: 20px 30px 0; background: #fff; border-bottom: 1px solid #eaecf0; }
+.article-top .wiki-tag { display: flex; justify-content: space-between; gap: 12px; color: #72777d; font-size: 10px; letter-spacing: .11em; text-transform: uppercase; }
+.article-top .wiki-tag a { color: #54595d; text-decoration: none; letter-spacing: 0; text-transform: none; font-weight: 600; }
+.article-top .wiki-tag a:hover { color: var(--blue); text-decoration: underline; }
+.article-top h2 { margin: 7px 0 15px; color: #202122; font: normal 31px/1.2 Georgia, "Times New Roman", serif; }
+.article-body { padding: 20px 30px 34px; color: #202122; font: 14px/1.68 Arial, Helvetica, sans-serif; overflow-wrap: anywhere; }
+.article-body a { color: #0645ad; text-decoration: none; }
+.article-body a:hover { text-decoration: underline; }
+.article-body a.new { color: #ba0000; }
+.article-body p { margin: .5em 0 1em; }
+.article-body h2 { margin: 1.3em 0 .5em; padding-bottom: 4px; border-bottom: 1px solid #a2a9b1; font: normal 22px/1.3 Georgia, serif; }
+.article-body h3 { margin: 1.2em 0 .4em; font: bold 17px/1.3 Georgia, serif; }
+.article-body table { max-width: 100%; border-collapse: collapse; font-size: 12px; }
+.article-body th, .article-body td { padding: 5px; border: 1px solid #a2a9b1; }
+.article-body img { max-width: 100%; height: auto; }
+.article-body figure, .article-body .thumb { max-width: min(42%, 300px); }
+.article-body .thumb.tright, .article-body figure[typeof*="mw:File/Thumb"] { float: right; margin: 0 0 12px 18px; }
+.article-body .thumb.tleft { float: left; margin: 0 18px 12px 0; }
+.article-body .infobox { float: right; clear: right; max-width: min(42%, 320px); margin: 0 0 14px 18px; padding: 7px; background: #f8f9fa; border: 1px solid #a2a9b1; font-size: 12px; }
+
+/* Wikipedia's {{Sidebar}} template: the series panel at the top of articles.
+   These rules mirror MediaWiki's own sidebar layout rather than treating it as
+   an ordinary full-width table. Its original inline colors and images remain intact. */
+.article-body table.sidebar {
+  display: table;
+  float: right;
+  clear: right;
+  width: 22em;
+  max-width: min(44%, 22em);
+  margin: .5em 0 1em 1em;
+  padding: .2em;
+  color: #202122;
+  background: #f8f9fa;
+  border: 1px solid #a2a9b1;
+  border-collapse: collapse;
+  text-align: center;
+  font-size: 88%;
+  line-height: 1.4;
+}
+.article-body table.sidebar td, .article-body table.sidebar th { padding: .2em .4em; border: 0; }
+.article-body table.sidebar .sidebar-pretitle { padding: .4em .4em 0; line-height: 1.2; }
+.article-body table.sidebar .sidebar-title,
+.article-body table.sidebar .sidebar-title-with-pretitle { padding: .1em .4em; font-size: 145%; line-height: 1.2; }
+.article-body table.sidebar .sidebar-image { padding: .2em .4em .4em; }
+.article-body table.sidebar .sidebar-image img,
+.article-body table.sidebar .sidebar-top-image img { display: inline-block; max-width: 100%; height: auto; }
+.article-body table.sidebar .sidebar-heading { padding: .1em .4em; }
+.article-body table.sidebar .sidebar-content { padding: 0 .5em .4em; }
+.article-body table.sidebar .sidebar-content-with-subgroup { padding: .1em .4em .2em; }
+.article-body table.sidebar .sidebar-above,
+.article-body table.sidebar .sidebar-below { padding: .3em .8em; font-weight: bold; }
+.article-body table.sidebar.sidebar-collapse .sidebar-above,
+.article-body table.sidebar.sidebar-collapse .sidebar-below { border-top: 1px solid #a2a9b1; border-bottom: 1px solid #a2a9b1; }
+.article-body table.sidebar .sidebar-navbar { padding: 0 .4em .4em; text-align: right; font-size: 115%; }
+.article-body table.sidebar .sidebar-list-title { padding: 0 .4em; text-align: left; font-weight: bold; font-size: 105%; }
+.article-body table.sidebar ul { margin: .25em 0; padding-left: 1.3em; text-align: left; }
+.article-body table.sidebar .sidebar-subgroup { width: 100%; margin: 0; border-spacing: 0; }
+
+.article-body .mw-editsection, .article-body .noprint, .article-body .navbox,
+.article-body .vertical-navbox, .article-body .metadata, .article-body .ambox { display: none !important; }
+.article-body .hatnote { color: #54595d; font-style: italic; }
+.article-body .toc { display: table; max-width: 100%; padding: 10px 15px; background: #f8f9fa; border: 1px solid #a2a9b1; }
+.article-body .toc ul { margin: 4px 0; padding-left: 22px; }
+.article-body .mw-parser-output::after { display: block; clear: both; content: ""; }
+.loading { padding: 55px 20px; color: #5b6572; text-align: center; }
+.spinner { width: 22px; height: 22px; margin: 0 auto 10px; border: 2px solid #dce2e7; border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.win-banner { display: none; margin: 0 0 15px; padding: 13px 16px; background: var(--success-soft); border: 1px solid var(--success); border-left: 5px solid var(--success); }
+.win-banner.visible { display: block; }
+.win-banner strong { display: block; color: var(--success); font-size: 17px; }
+.win-banner span { color: #405b53; font-size: 12px; }
+.route-history { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 12px 0 0; color: var(--muted); font-size: 10px; }
+.route-history .chip { padding: 3px 2px; color: #505c6a; background: transparent; border-bottom: 1px solid var(--line); }
+.route-history .chip.current { color: var(--blue); border-color: var(--blue); font-weight: 700; }
+.route-history .arrow { color: #98a3ad; }
+.foot { margin-top: 27px; color: #7d8991; font-size: 10px; }
+.foot a { color: #586b87; }
+
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 28px); padding-top: 0; }
+  .topbar { margin: 0 -14px 25px; padding: 15px 14px; }
+  .top-note { font-size: 9px; }
+  .hero { display: block; margin-bottom: 18px; }
+  h1 { font-size: 35px; }
+  .hero p { max-width: 100%; margin-top: 9px; font-size: 12px; }
+  .setup { padding: 15px; }
+  .route-grid { grid-template-columns: 1fr; gap: 17px; }
+  .setup-footer { align-items: stretch; flex-direction: column; gap: 10px; }
+  .primary { width: 100%; }
+  .gamebar { gap: 12px; }
+  .stats { width: 100%; justify-content: flex-start; gap: 22px; }
+  .target { flex-basis: calc(100% - 110px); }
+  .reader-head { align-items: flex-start; flex-direction: column; gap: 3px; }
+  .article-top { padding: 15px 16px 0; }
+  .article-top h2 { font-size: 26px; }
+  .article-body { padding: 14px 16px 25px; font-size: 14px; }
+  .article-body .infobox, .article-body .thumb, .article-body figure { float: none !important; max-width: 100% !important; margin: 12px auto !important; }
+  .article-body table.sidebar {
+    float: none !important;
+    clear: both;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 0 1.1em !important;
+  }
+}

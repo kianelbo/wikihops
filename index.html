@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17253b">
+  <title>Wikihops — the Wikipedia link game</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">WIKI<span>HOPS</span></div>
+      <div class="top-note">Wikipedia link game</div>
+    </header>
+
+    <section class="hero">
+      <h1>Find the connection.</h1>
+      <p>Navigate from one Wikipedia article to another using as few links as possible.</p>
+    </section>
+
+    <section class="setup" id="setup">
+      <div class="route-grid">
+        <div class="route-card">
+          <label class="route-label" for="srcInput">FROM</label>
+          <div class="input-row">
+            <div class="autocomplete">
+              <input class="page-input" id="srcInput" autocomplete="off" spellcheck="false" placeholder="Starting article">
+              <div class="suggestions" id="srcSuggestions" role="listbox"></div>
+            </div>
+            <button class="random-btn" id="randomSrc" type="button" title="Random starting article">↻</button>
+          </div>
+        </div>
+        <div class="route-card destination">
+          <label class="route-label" for="dstInput">TO</label>
+          <div class="input-row">
+            <div class="autocomplete">
+              <input class="page-input" id="dstInput" autocomplete="off" spellcheck="false" placeholder="Destination article">
+              <div class="suggestions" id="dstSuggestions" role="listbox"></div>
+            </div>
+            <button class="random-btn" id="randomDst" type="button" title="Random destination">↻</button>
+          </div>
+        </div>
+      </div>
+      <div class="setup-footer">
+        <div class="hint">Choose two Wikipedia articles.</div>
+        <button class="primary" id="startBtn" type="button">START</button>
+      </div>
+      <div class="error" id="setupError" aria-live="polite"></div>
+    </section>
+
+    <section class="gamebar" id="gamebar">
+      <div class="stats">
+        <div class="stat"><strong id="hopCount">0</strong><span>Hops taken</span></div>
+      </div>
+      <div class="target"><span>Target</span><b id="targetName">—</b></div>
+      <button class="secondary" id="restartBtn" type="button">New game</button>
+    </section>
+
+    <div class="win-banner" id="winBanner" aria-live="polite">
+      <strong>Destination reached.</strong>
+      <span id="winText">You made it.</span>
+    </div>
+
+    <section class="reader-wrap" id="readerWrap">
+      <div class="reader-head">
+        <div><strong id="currentTitle">—</strong></div>
+        <div>Choose a link to hop.</div>
+      </div>
+      <article class="article-card">
+        <div class="article-top">
+          <div class="wiki-tag"><span>WIKIPEDIA</span><a id="sourceLink" href="https://en.wikipedia.org" target="_blank" rel="noopener noreferrer">View original ↗</a></div>
+          <h2 id="articleTitle">Loading article…</h2>
+        </div>
+        <div class="article-body" id="articleBody">
+          <div class="loading"><div class="spinner"></div>Fetching your first article…</div>
+        </div>
+      </article>
+      <div class="route-history" id="routeHistory"></div>
+    </section>
+
+    <footer class="foot">Wikipedia content · CC BY-SA. <a href="https://en.wikipedia.org/wiki/Wikipedia:Reusing_Wikipedia_content" target="_blank" rel="noopener noreferrer">Reuse & attribution details</a>. Wikihops is not affiliated with the Wikimedia Foundation.</footer>
+  </main>
+</body>
+</html>
