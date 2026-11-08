@@ -261,9 +261,8 @@
             if (!state.visited.some(item => titleKey(item) === titleKey(canonical))) state.visited.push(canonical);
           }
           $("hopCount").textContent = state.hops;
-          $("currentTitle").textContent = canonical;
           $("articleTitle").textContent = canonical;
-          $("readerMessage").textContent = "Choose a link to hop.";
+          $("readerMessage").textContent = "";
           $("sourceLink").href = wikiUrl(canonical);
           $("articleBody").replaceChildren(...Array.from(sanitizeAndPrepare(data.parse.text).childNodes));
           renderHistory();
