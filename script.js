@@ -4,10 +4,10 @@
       const $ = (id) => document.getElementById(id);
       const srcInput = $("srcInput"), dstInput = $("dstInput");
       const state = {
-        source: "", target: "", current: "", hops: 0,
+        target: "", current: "", hops: 0,
         active: false, won: false, visited: [], requestId: 0,
         suggestions: { src: [], dst: [] }, selected: { src: -1, dst: -1 },
-        searchTimers: {}
+        searchTimers: {}, searchControllers: {}, searchCache: new Map()
       };
 
       function apiUrl(params) {
@@ -15,8 +15,8 @@
         Object.entries({ ...params, format: "json", origin: "*" }).forEach(([k, v]) => url.searchParams.set(k, v));
         return url.toString();
       }
-      async function api(params) {
-        const response = await fetch(apiUrl(params));
+      async function api(params, signal) {
+        const response = await fetch(apiUrl(params), { signal });
         if (!response.ok) throw new Error(`Wikipedia returned ${response.status}`);
         const data = await response.json();
         if (data.error) throw new Error(data.error.info || "Wikipedia API error");
@@ -85,29 +85,37 @@
         box.classList.add("open");
       }
       async function searchPages(which, query) {
-        if (query.trim().length < 2) { hideSuggestions(which); return; }
+        const key = query.trim().toLocaleLowerCase();
+        if (key.length < 2) { hideSuggestions(which); return; }
+        const cached = state.searchCache.get(key);
+        if (cached) { showSuggestions(which, cached); return; }
+        const controller = new AbortController();
+        state.searchControllers[which] = controller;
         try {
           const data = await api({
             action: "query", generator: "search", gsrsearch: query,
             gsrnamespace: 0, gsrlimit: 8,
-            prop: "pageprops|extracts", exintro: 1, explaintext: 1,
-            exchars: 180
-          });
+            prop: "pageprops", ppprop: "disambiguation|wikibase-shortdesc"
+          }, controller.signal);
           const results = Object.values(data.query.pages || {})
             .sort((a, b) => a.index - b.index)
             .filter(page => !Object.prototype.hasOwnProperty.call(page.pageprops || {}, "disambiguation"))
             .map(page => ({
               title: page.title,
-              description: page.pageprops?.["wikibase-shortdesc"] || page.extract || ""
+              description: page.pageprops?.["wikibase-shortdesc"] || ""
             }));
-          if ((which === "src" ? srcInput : dstInput).value.trim() === query.trim()) showSuggestions(which, results);
-        } catch (_) { hideSuggestions(which); }
+          if ((which === "src" ? srcInput : dstInput).value.trim() !== query.trim()) return;
+          if (state.searchCache.size === 40) state.searchCache.delete(state.searchCache.keys().next().value);
+          state.searchCache.set(key, results);
+          showSuggestions(which, results);
+        } catch (error) { if (error.name !== "AbortError") hideSuggestions(which); }
       }
       function bindAutocomplete(which, input) {
         input.addEventListener("input", () => {
+          state.searchControllers[which]?.abort();
           clearTimeout(state.searchTimers[which]);
           const query = input.value;
-          state.searchTimers[which] = setTimeout(() => searchPages(which, query), 180);
+          state.searchTimers[which] = setTimeout(() => searchPages(which, query), 120);
         });
         input.addEventListener("keydown", (event) => {
           const list = state.suggestions[which];
@@ -133,14 +141,9 @@
       async function resolveTitle(raw) {
         const title = raw.trim();
         if (!title) throw new Error("Please choose both a starting page and a destination.");
-        const data = await api({
-          action: "query", titles: title, redirects: 1,
-          prop: "info|pageprops", inprop: "url"
-        });
-        const page = Object.values(data.query.pages)[0];
-        if (!page || page.missing !== undefined) throw new Error(`Couldn't find the Wikipedia page "${title}".`);
-        if (page.ns !== 0) throw new Error("Please choose an article from Wikipedia's main namespace.");
-        if (Object.prototype.hasOwnProperty.call(page.pageprops || {}, "disambiguation")) {
+        const page = await resolveArticle(title);
+        if (page.namespace !== 0) throw new Error("Please choose an article from Wikipedia's main namespace.");
+        if (page.isDisambiguation) {
           throw new Error(`"${page.title}" is a disambiguation page. Please choose a specific article.`);
         }
         return page.title;
@@ -148,12 +151,13 @@
       async function resolveArticle(raw) {
         const data = await api({
           action: "query", titles: raw, redirects: 1,
-          prop: "info|pageprops"
+          prop: "pageprops", ppprop: "disambiguation"
         });
         const page = Object.values(data.query.pages)[0];
         if (!page || page.missing !== undefined) throw new Error(`Couldn't find the Wikipedia page "${raw}".`);
         return {
           title: page.title,
+          namespace: page.ns,
           isDisambiguation: Object.prototype.hasOwnProperty.call(page.pageprops || {}, "disambiguation")
         };
       }
@@ -223,17 +227,12 @@
           if (lazySrc && isPlaceholder) img.setAttribute("src", lazySrc);
           const lazySrcset = img.getAttribute("data-srcset") || img.getAttribute("data-lazy-srcset");
           if (lazySrcset && !img.hasAttribute("srcset")) img.setAttribute("srcset", lazySrcset);
-          if (img.hasAttribute("src")) img.setAttribute("src", absoluteWikiAsset(img.getAttribute("src")));
-          if (img.hasAttribute("srcset")) img.setAttribute("srcset", normalizeSrcset(img.getAttribute("srcset")));
           img.loading = "lazy";
           img.decoding = "async";
         });
-        doc.querySelectorAll("source[src], source[srcset]").forEach(source => {
-          if (source.hasAttribute("src")) source.setAttribute("src", absoluteWikiAsset(source.getAttribute("src")));
-          if (source.hasAttribute("srcset")) source.setAttribute("srcset", normalizeSrcset(source.getAttribute("srcset")));
-        });
-        doc.querySelectorAll("[src]").forEach(el => {
-          if (el.tagName !== "IMG" && el.tagName !== "SOURCE") el.setAttribute("src", absoluteWikiAsset(el.getAttribute("src")));
+        doc.querySelectorAll("[src], [srcset]").forEach(el => {
+          if (el.hasAttribute("src")) el.setAttribute("src", absoluteWikiAsset(el.getAttribute("src")));
+          if (el.hasAttribute("srcset")) el.setAttribute("srcset", normalizeSrcset(el.getAttribute("srcset")));
         });
         return doc.body;
       }
@@ -315,7 +314,7 @@
         try {
           const [source, target] = await Promise.all([resolveTitle(srcInput.value), resolveTitle(dstInput.value)]);
           if (titleKey(source) === titleKey(target)) throw new Error("Choose two different articles — the journey needs somewhere to go!");
-          state.source = source; state.target = target; state.current = "";
+          state.target = target; state.current = "";
           state.hops = 0; state.won = false; state.visited = [source]; state.active = true;
           $("setup").style.display = "none";
           $("gamebar").classList.add("visible");
