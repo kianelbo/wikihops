@@ -1,12 +1,13 @@
 (() => {
       "use strict";
       const API = "https://en.wikipedia.org/w/api.php";
+      const GAME_DURATION = 60;
       const $ = (id) => document.getElementById(id);
       const srcInput = $("srcInput"), dstInput = $("dstInput");
       const state = {
         target: "", current: "", hops: 0,
-        active: false, won: false, visited: [], requestId: 0,
-        suggestions: { src: [], dst: [] }, selected: { src: -1, dst: -1 }, audioContext: null, confettiTimer: 0,
+        active: false, won: false, lost: false, visited: [], requestId: 0,
+        suggestions: { src: [], dst: [] }, selected: { src: -1, dst: -1 }, audioContext: null, confettiTimer: 0, timerInterval: 0, timerStarted: 0,
         searchTimers: {}, searchControllers: {}, searchCache: new Map()
       };
 
@@ -242,7 +243,7 @@
         $("readerMessage").textContent = "Loading " + title + "…";
         try {
           const resolved = await resolveArticle(title);
-          if (request !== state.requestId) return;
+          if (request !== state.requestId || !state.active) return;
           if (resolved.isDisambiguation) {
             $("readerMessage").textContent = `"${resolved.title}" is a disambiguation page. Choose a specific article link; no hop was counted.`;
             if (!isHop) throw new Error("Choose a specific article instead of a disambiguation page.");
@@ -253,7 +254,8 @@
             action: "parse", page: resolved.title, prop: "text",
             disableeditsection: 1, disabletoc: 0, formatversion: 2
           });
-          if (request !== state.requestId) return;
+          updateTimer();
+          if (request !== state.requestId || !state.active) return;
           const canonical = data.parse.title;
           state.current = canonical;
           if (isHop) {
@@ -269,7 +271,7 @@
           if (titleKey(canonical) === titleKey(state.target)) winGame();
           window.scrollTo({ behavior: "smooth", top: 0 });
         } catch (error) {
-          if (request !== state.requestId) return;
+          if (request !== state.requestId || !state.active) return;
           if (isHop && state.current) {
             $("readerMessage").textContent = `Couldn't load "${title}"; no hop was counted. Please try another link.`;
             return;
@@ -298,16 +300,61 @@
       }
 
       function winGame() {
+        if (!state.active || state.lost) return;
         state.won = true;
-        $("winText").textContent = `You reached ${state.target} in ${state.hops} ${state.hops === 1 ? "hop" : "hops"}.`;
-        $("winDialog").showModal();
+        state.active = false;
+        stopTimer();
+        $("endHeading").textContent = "Destination reached!";
+        $("endText").textContent = `You reached ${state.target} in ${state.hops} ${state.hops === 1 ? "hop" : "hops"}.`;
+        $("endDialog").classList.remove("lost");
+        $("endDialog").showModal();
         launchConfetti();
-        playWinSound();
+        const winSoundWave = [523.25, 659.25, 783.99];
+        playSound(winSoundWave);
         $("articleBody").querySelectorAll("a[data-wiki-title]").forEach(a => {
           a.removeAttribute("data-wiki-title");
           a.href = wikiUrl(a.textContent.trim() || state.target);
           a.target = "_blank"; a.rel = "noopener noreferrer";
         });
+      }
+
+      function loseGame() {
+        if (!state.active || state.won || state.lost) return;
+        state.lost = true;
+        state.active = false;
+        stopTimer();
+        $("endHeading").textContent = "Time's up!";
+        $("endText").textContent = `You didn't reach ${state.target} in time. You made ${state.hops} ${state.hops === 1 ? "hop" : "hops"}.`;
+        $("endDialog").classList.add("lost");
+        $("confettiLayer").replaceChildren();
+        $("endDialog").showModal();
+        const lossSoundWave = [392, 329.63, 261.63];
+        playSound(lossSoundWave);
+      }
+
+      function updateTimer() {
+        const remaining = Math.max(0, GAME_DURATION - (performance.now() - state.timerStarted) / 1000);
+        const fraction = remaining / GAME_DURATION;
+        const start = [50, 116, 94];
+        const end = [41, 43, 57];
+        const color = start.map((value, index) => Math.round(value + (end[index] - value) * (1 - fraction)));
+        $("timerBar").style.width = `${fraction * 100}%`;
+        $("timerBar").style.backgroundColor = `rgb(${color.join(" ")})`;
+        $("timerTrack").setAttribute("aria-valuenow", String(Math.ceil(remaining)));
+        $("timerTrack").setAttribute("aria-valuetext", `${Math.ceil(remaining)} seconds remaining`);
+        if (remaining === 0) loseGame();
+      }
+
+      function startTimer() {
+        stopTimer();
+        state.timerStarted = performance.now();
+        updateTimer();
+        state.timerInterval = setInterval(updateTimer, 100);
+      }
+
+      function stopTimer() {
+        clearInterval(state.timerInterval);
+        state.timerInterval = 0;
       }
 
       function launchConfetti() {
@@ -330,28 +377,33 @@
 
       function prepareWinSound() {
         if (!window.AudioContext) return;
-        state.audioContext ||= new window.AudioContext();
-        if (state.audioContext.state === "suspended") {
-          state.audioContext.resume().catch(error => console.warn("Couldn't enable the win sound.", error));
+        try {
+          state.audioContext ||= new window.AudioContext();
+          if (state.audioContext.state === "suspended") {
+            state.audioContext.resume().catch(error => console.warn("Couldn't enable the win sound.", error));
+          }
+        } catch (error) {
+          console.warn("Couldn't enable the win sound.", error);
         }
       }
 
-      function playWinSound() {
+      function playSound(frequencies) {
         const context = state.audioContext;
         if (!context || context.state !== "running") return;
         const now = context.currentTime;
-        const oscillator = context.createOscillator();
-        const volume = context.createGain();
-        oscillator.type = "triangle";
-        oscillator.frequency.setValueAtTime(523.25, now);
-        oscillator.frequency.setValueAtTime(659.25, now + 0.13);
-        oscillator.frequency.setValueAtTime(783.99, now + 0.26);
-        volume.gain.setValueAtTime(0.001, now);
-        volume.gain.exponentialRampToValueAtTime(0.16, now + 0.035);
-        volume.gain.exponentialRampToValueAtTime(0.001, now + 0.72);
-        oscillator.connect(volume).connect(context.destination);
-        oscillator.start(now);
-        oscillator.stop(now + 0.73);
+        frequencies.forEach((frequency, index) => {
+          const start = now + index * 0.15;
+          const oscillator = context.createOscillator();
+          const volume = context.createGain();
+          oscillator.type = "triangle";
+          oscillator.frequency.setValueAtTime(frequency, start);
+          volume.gain.setValueAtTime(0.001, start);
+          volume.gain.exponentialRampToValueAtTime(0.13, start + 0.035);
+          volume.gain.exponentialRampToValueAtTime(0.001, start + 0.2);
+          oscillator.connect(volume).connect(context.destination);
+          oscillator.start(start);
+          oscillator.stop(start + 0.21);
+        });
       }
 
       async function startGame() {
@@ -359,17 +411,20 @@
         $("startBtn").disabled = true;
         $("startBtn").textContent = "SETTING UP…";
         try {
+          prepareWinSound();
           const [source, target] = await Promise.all([resolveTitle(srcInput.value), resolveTitle(dstInput.value)]);
           if (titleKey(source) === titleKey(target)) throw new Error("Choose two different articles — the journey needs somewhere to go!");
           state.target = target; state.current = "";
-          state.hops = 0; state.won = false; state.visited = [source]; state.active = true;
+          state.hops = 0; state.won = false; state.lost = false; state.visited = [source]; state.active = true;
           $("setup").style.display = "none";
           $("gamebar").classList.add("visible");
           $("readerWrap").classList.add("visible");
-          if ($("winDialog").open) $("winDialog").close();
+          if ($("endDialog").open) $("endDialog").close();
           $("confettiLayer").replaceChildren();
           $("targetName").textContent = target;
           $("hopCount").textContent = "0";
+          renderHistory();
+          startTimer();
           loadArticle(source, false);
         } catch (error) {
           $("setupError").textContent = error.message || "Something went wrong. Please try again.";
@@ -380,12 +435,16 @@
       }
 
       function newGame() {
-        state.active = false; state.won = false; state.requestId++;
+        state.active = false; state.won = false; state.lost = false; state.requestId++;
+        stopTimer();
+        $("timerBar").style.width = "100%";
+        $("timerBar").style.backgroundColor = "var(--success)";
         $("setup").style.display = "";
         $("gamebar").classList.remove("visible");
         $("readerWrap").classList.remove("visible");
-        if ($("winDialog").open) $("winDialog").close();
+        if ($("endDialog").open) $("endDialog").close();
         $("confettiLayer").replaceChildren();
+        $("endDialog").classList.remove("lost");
         clearTimeout(state.confettiTimer);
         $("setupError").textContent = "";
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -395,11 +454,11 @@
       $("randomDst").addEventListener("click", () => fillRandom("dst"));
       $("startBtn").addEventListener("click", startGame);
       $("restartBtn").addEventListener("click", newGame);
-      $("closeWinBtn").addEventListener("click", newGame);
-      $("winDialog").addEventListener("keydown", event => {
+      $("closeEndBtn").addEventListener("click", newGame);
+      $("endDialog").addEventListener("keydown", event => {
         if (event.key === "Escape") {
           event.preventDefault();
-          $("winDialog").close();
+          $("endDialog").close();
         }
       });
       bindAutocomplete("src", srcInput);
@@ -411,7 +470,6 @@
         event.preventDefault();
         const nextTitle = anchor.dataset.wikiTitle;
         if (!nextTitle || titleKey(nextTitle) === titleKey(state.current)) return;
-        prepareWinSound();
         loadArticle(nextTitle, true);
       });
 
