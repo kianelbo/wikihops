@@ -3,17 +3,34 @@
       const API = "https://en.wikipedia.org/w/api.php";
       const GAME_DURATION = 60;
       const $ = (id) => document.getElementById(id);
-      const srcInput = $("srcInput"), dstInput = $("dstInput");
+      const srcInput = $("srcInput");
+      const dstInput = $("dstInput");
       const state = {
-        target: "", current: "", hops: 0,
-        active: false, won: false, lost: false, result: "", visited: [], requestId: 0,
-        suggestions: { src: [], dst: [] }, selected: { src: -1, dst: -1 }, audioContext: null, confettiTimer: 0, timerInterval: 0, timerStarted: 0,
-        searchTimers: {}, searchControllers: {}, searchCache: new Map()
+        target: "",
+        current: "",
+        hops: 0,
+        active: false,
+        won: false,
+        lost: false,
+        result: "",
+        visited: [],
+        requestId: 0,
+        suggestions: { src: [], dst: [] },
+        selected: { src: -1, dst: -1 },
+        audioContext: null,
+        confettiTimer: 0,
+        timerInterval: 0,
+        timerStarted: 0,
+        searchTimers: {},
+        searchControllers: {},
+        searchCache: new Map()
       };
 
+      // Wikipedia API and article-title helpers
       function apiUrl(params) {
         const url = new URL(API);
-        Object.entries({ ...params, format: "json", origin: "*" }).forEach(([k, v]) => url.searchParams.set(k, v));
+        Object.entries({ ...params, format: "json", origin: "*" })
+          .forEach(([key, value]) => url.searchParams.set(key, value));
         return url.toString();
       }
       async function api(params, signal) {
@@ -52,6 +69,7 @@
         }
       }
 
+      // Autocomplete
       function hideSuggestions(which) {
         $(`${which}Suggestions`).classList.remove("open");
         state.suggestions[which] = [];
@@ -62,7 +80,10 @@
         state.suggestions[which] = results;
         state.selected[which] = -1;
         box.replaceChildren();
-        if (!results.length) { box.classList.remove("open"); return; }
+        if (!results.length) {
+          box.classList.remove("open");
+          return;
+        }
         results.forEach((item, index) => {
           const button = document.createElement("button");
           button.type = "button";
@@ -87,9 +108,15 @@
       }
       async function searchPages(which, query) {
         const key = query.trim().toLocaleLowerCase();
-        if (key.length < 2) { hideSuggestions(which); return; }
+        if (key.length < 2) {
+          hideSuggestions(which);
+          return;
+        }
         const cached = state.searchCache.get(key);
-        if (cached) { showSuggestions(which, cached); return; }
+        if (cached) {
+          showSuggestions(which, cached);
+          return;
+        }
         const controller = new AbortController();
         state.searchControllers[which] = controller;
         try {
@@ -109,7 +136,9 @@
           if (state.searchCache.size === 40) state.searchCache.delete(state.searchCache.keys().next().value);
           state.searchCache.set(key, results);
           showSuggestions(which, results);
-        } catch (error) { if (error.name !== "AbortError") hideSuggestions(which); }
+        } catch (error) {
+          if (error.name !== "AbortError") hideSuggestions(which);
+        }
       }
       function bindAutocomplete(which, input) {
         input.addEventListener("input", () => {
@@ -121,20 +150,26 @@
         input.addEventListener("keydown", (event) => {
           const list = state.suggestions[which];
           if (!list.length) {
-            if (event.key === "Enter") { event.preventDefault(); hideSuggestions(which); }
+            if (event.key === "Enter") {
+              event.preventDefault();
+              hideSuggestions(which);
+            }
             return;
           }
           if (event.key === "ArrowDown" || event.key === "ArrowUp") {
             event.preventDefault();
             const delta = event.key === "ArrowDown" ? 1 : -1;
             state.selected[which] = (state.selected[which] + delta + list.length) % list.length;
-            [...$(`${which}Suggestions`).children].forEach((el, i) => el.classList.toggle("active", i === state.selected[which]));
+            [...$(`${which}Suggestions`).children]
+              .forEach((el, i) => el.classList.toggle("active", i === state.selected[which]));
           } else if (event.key === "Enter") {
             event.preventDefault();
             const index = state.selected[which] < 0 ? 0 : state.selected[which];
             input.value = list[index].title;
             hideSuggestions(which);
-          } else if (event.key === "Escape") hideSuggestions(which);
+          } else if (event.key === "Escape") {
+            hideSuggestions(which);
+          }
         });
         input.addEventListener("blur", () => setTimeout(() => hideSuggestions(which), 130));
       }
@@ -151,8 +186,11 @@
       }
       async function resolveArticle(raw) {
         const data = await api({
-          action: "query", titles: raw, redirects: 1,
-          prop: "pageprops", ppprop: "disambiguation"
+          action: "query",
+          titles: raw,
+          redirects: 1,
+          prop: "pageprops",
+          ppprop: "disambiguation"
         });
         const page = Object.values(data.query.pages)[0];
         if (!page || page.missing !== undefined) throw new Error(`Couldn't find the Wikipedia page "${raw}".`);
@@ -170,8 +208,11 @@
         if (!value) return value;
         const trimmed = value.trim();
         if (/^(data:|blob:|https?:)/i.test(trimmed)) return trimmed;
-        try { return new URL(trimmed, "https://en.wikipedia.org/").href; }
-        catch (_) { return trimmed; }
+        try {
+          return new URL(trimmed, "https://en.wikipedia.org/").href;
+        } catch (_) {
+          return trimmed;
+        }
       }
       function normalizeSrcset(value) {
         if (!value) return value;
@@ -185,11 +226,15 @@
       function sanitizeAndPrepare(html) {
         const doc = new DOMParser().parseFromString(html, "text/html");
         // Keep <source> elements: Wikipedia can use them inside <picture> for responsive images.
-        doc.querySelectorAll("script, style, link, meta, iframe, frame, object, embed, form, input, button, textarea, select, audio, video, track").forEach(el => el.remove());
+        doc.querySelectorAll(
+          "script, style, link, meta, iframe, frame, object, embed, form, input, button, textarea, select, audio, video, track"
+        ).forEach(el => el.remove());
         doc.querySelectorAll("*").forEach(el => {
           [...el.attributes].forEach(attr => {
             const name = attr.name.toLowerCase();
-            if (name.startsWith("on") || name === "srcdoc" || (["href","src","xlink:href","poster"].includes(name) && /^\s*javascript:/i.test(attr.value))) {
+            const isUrlAttribute = ["href", "src", "xlink:href", "poster"].includes(name);
+            if (name.startsWith("on") || name === "srcdoc" ||
+                (isUrlAttribute && /^\s*javascript:/i.test(attr.value))) {
               el.removeAttribute(attr.name);
             }
           });
@@ -201,7 +246,9 @@
           if (href.startsWith("/wiki/")) {
             const raw = href.slice(6).split("#")[0];
             let title = raw;
-            try { title = decodeURIComponent(raw).replace(/_/g, " "); } catch (_) {}
+            try {
+              title = decodeURIComponent(raw).replace(/_/g, " ");
+            } catch (_) {}
             if (!title.includes(":")) {
               a.dataset.wikiTitle = title;
               a.href = "#";
@@ -209,12 +256,14 @@
               a.removeAttribute("rel");
             } else {
               a.href = "https://en.wikipedia.org" + href;
-              a.target = "_blank"; a.rel = "noopener noreferrer";
+              a.target = "_blank";
+              a.rel = "noopener noreferrer";
             }
           } else if (href.startsWith("#")) {
             a.href = href;
           } else if (/^https?:\/\//i.test(href)) {
-            a.target = "_blank"; a.rel = "noopener noreferrer";
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
           } else {
             a.removeAttribute("href");
           }
@@ -222,9 +271,13 @@
         // The parser may provide responsive or lazy-loaded image attributes. Resolve every
         // candidate against en.wikipedia.org, and promote lazy URLs to real src/srcset values.
         doc.querySelectorAll("img").forEach(img => {
-          const lazySrc = img.getAttribute("data-src") || img.getAttribute("data-lazy-src") || img.getAttribute("data-original");
+          const lazySrc = img.getAttribute("data-src") ||
+            img.getAttribute("data-lazy-src") ||
+            img.getAttribute("data-original");
           const currentSrc = img.getAttribute("src");
-          const isPlaceholder = !currentSrc || /^(data:image\/(?:gif|svg\+xml)|about:blank)/i.test(currentSrc) || /1x1\.png/i.test(currentSrc);
+          const isPlaceholder = !currentSrc ||
+            /^(data:image\/(?:gif|svg\+xml)|about:blank)/i.test(currentSrc) ||
+            /1x1\.png/i.test(currentSrc);
           if (lazySrc && isPlaceholder) img.setAttribute("src", lazySrc);
           const lazySrcset = img.getAttribute("data-srcset") || img.getAttribute("data-lazy-srcset");
           if (lazySrcset && !img.hasAttribute("srcset")) img.setAttribute("srcset", lazySrcset);
@@ -251,8 +304,12 @@
           }
           if (!state.current) setLoading("Loading " + resolved.title + "…");
           const data = await api({
-            action: "parse", page: resolved.title, prop: "text",
-            disableeditsection: 1, disabletoc: 0, formatversion: 2
+            action: "parse",
+            page: resolved.title,
+            prop: "text",
+            disableeditsection: 1,
+            disabletoc: 0,
+            formatversion: 2
           });
           updateTimer();
           if (request !== state.requestId || !state.active) return;
@@ -287,11 +344,12 @@
         const box = $("routeHistory");
         box.replaceChildren();
         const label = document.createElement("span");
-        label.textContent = "ROUTE";
+        label.textContent = "ROUTE:";
         box.append(label);
         state.visited.forEach((title, index) => {
           const arrow = document.createElement("span");
-          arrow.className = "arrow"; arrow.textContent = index ? "→" : " ";
+          arrow.className = "arrow";
+          arrow.textContent = index ? "→" : " ";
           const chip = document.createElement("span");
           chip.className = "chip" + (index === state.visited.length - 1 ? " current" : "");
           chip.textContent = title;
@@ -309,32 +367,34 @@
 
       function winGame() {
         if (!state.active || state.lost) return;
-        state.won = true;
-        state.active = false;
-        stopTimer();
-        $("gamePanel").classList.add("finished");
-        state.result = `Destination reached! You reached "${state.target}" in ${state.hops} ${state.hops === 1 ? "hop" : "hops"}.`;
-        renderHistory();
-        launchConfetti();
+        const result = `Destination reached! You reached "${state.target}" in ${state.hops} ${state.hops === 1 ? "hop" : "hops"}.`;
         const winSoundWave = [523.25, 659.25, 783.99];
-        playSound(winSoundWave);
+        finishGame(true, result, winSoundWave);
+        launchConfetti();
         $("articleBody").querySelectorAll("a[data-wiki-title]").forEach(a => {
           a.removeAttribute("data-wiki-title");
           a.href = wikiUrl(a.textContent.trim() || state.target);
-          a.target = "_blank"; a.rel = "noopener noreferrer";
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
         });
       }
 
       function loseGame() {
         if (!state.active || state.won || state.lost) return;
-        state.lost = true;
+        const result = `Time's up! You didn't reach "${state.target}" in time. You made ${state.hops} ${state.hops === 1 ? "hop" : "hops"}.`;
+        const loseSoundWave = [392, 329.63, 261.63];
+        finishGame(false, result, loseSoundWave);
+      }
+
+      function finishGame(won, result, frequencies) {
+        state.won = won;
+        state.lost = !won;
         state.active = false;
         stopTimer();
         $("gamePanel").classList.add("finished");
-        state.result = `Time's up! You didn't reach "${state.target}" in time. You made ${state.hops} ${state.hops === 1 ? "hop" : "hops"}.`;
+        state.result = result;
         renderHistory();
-        const loseSoundWave = [392, 329.63, 261.63];
-        playSound(loseSoundWave);
+        playSound(frequencies);
       }
 
       function updateTimer() {
@@ -418,9 +478,17 @@
         try {
           prepareWinSound();
           const [source, target] = await Promise.all([resolveTitle(srcInput.value), resolveTitle(dstInput.value)]);
-          if (titleKey(source) === titleKey(target)) throw new Error("Choose two different articles — the journey needs somewhere to go!");
-          state.target = target; state.current = "";
-          state.hops = 0; state.won = false; state.lost = false; state.result = ""; state.visited = [source]; state.active = true;
+          if (titleKey(source) === titleKey(target)) {
+            throw new Error("Choose two different articles — the journey needs somewhere to go!");
+          }
+          state.target = target;
+          state.current = "";
+          state.hops = 0;
+          state.won = false;
+          state.lost = false;
+          state.result = "";
+          state.visited = [source];
+          state.active = true;
           $("setup").style.display = "none";
           $("gamePanel").classList.add("playing");
           $("gamePanel").classList.remove("finished");
@@ -441,7 +509,11 @@
       }
 
       function newGame() {
-        state.active = false; state.won = false; state.lost = false; state.result = ""; state.requestId++;
+        state.active = false;
+        state.won = false;
+        state.lost = false;
+        state.result = "";
+        state.requestId++;
         stopTimer();
         $("gamebar").append($("restartBtn"));
         $("timerBar").style.width = "100%";
