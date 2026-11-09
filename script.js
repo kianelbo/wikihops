@@ -6,7 +6,7 @@
       const srcInput = $("srcInput"), dstInput = $("dstInput");
       const state = {
         target: "", current: "", hops: 0,
-        active: false, won: false, lost: false, visited: [], requestId: 0,
+        active: false, won: false, lost: false, result: "", visited: [], requestId: 0,
         suggestions: { src: [], dst: [] }, selected: { src: -1, dst: -1 }, audioContext: null, confettiTimer: 0, timerInterval: 0, timerStarted: 0,
         searchTimers: {}, searchControllers: {}, searchCache: new Map()
       };
@@ -297,6 +297,14 @@
           chip.textContent = title;
           box.append(arrow, chip);
         });
+        if (state.result) {
+          const result = document.createElement("span");
+          result.className = `route-result ${state.won ? "won" : "lost"}`;
+          const message = document.createElement("span");
+          message.textContent = state.result;
+          result.append(message, $("restartBtn"));
+          box.append(result);
+        }
       }
 
       function winGame() {
@@ -304,10 +312,9 @@
         state.won = true;
         state.active = false;
         stopTimer();
-        $("endHeading").textContent = "Destination reached!";
-        $("endText").textContent = `You reached ${state.target} in ${state.hops} ${state.hops === 1 ? "hop" : "hops"}.`;
-        $("endDialog").classList.remove("lost");
-        $("endDialog").showModal();
+        $("gamePanel").classList.add("finished");
+        state.result = `Destination reached! You reached "${state.target}" in ${state.hops} ${state.hops === 1 ? "hop" : "hops"}.`;
+        renderHistory();
         launchConfetti();
         const winSoundWave = [523.25, 659.25, 783.99];
         playSound(winSoundWave);
@@ -323,13 +330,11 @@
         state.lost = true;
         state.active = false;
         stopTimer();
-        $("endHeading").textContent = "Time's up!";
-        $("endText").textContent = `You didn't reach ${state.target} in time. You made ${state.hops} ${state.hops === 1 ? "hop" : "hops"}.`;
-        $("endDialog").classList.add("lost");
-        $("confettiLayer").replaceChildren();
-        $("endDialog").showModal();
-        const lossSoundWave = [392, 329.63, 261.63];
-        playSound(lossSoundWave);
+        $("gamePanel").classList.add("finished");
+        state.result = `Time's up! You didn't reach "${state.target}" in time. You made ${state.hops} ${state.hops === 1 ? "hop" : "hops"}.`;
+        renderHistory();
+        const loseSoundWave = [392, 329.63, 261.63];
+        playSound(loseSoundWave);
       }
 
       function updateTimer() {
@@ -415,11 +420,12 @@
           const [source, target] = await Promise.all([resolveTitle(srcInput.value), resolveTitle(dstInput.value)]);
           if (titleKey(source) === titleKey(target)) throw new Error("Choose two different articles — the journey needs somewhere to go!");
           state.target = target; state.current = "";
-          state.hops = 0; state.won = false; state.lost = false; state.visited = [source]; state.active = true;
+          state.hops = 0; state.won = false; state.lost = false; state.result = ""; state.visited = [source]; state.active = true;
           $("setup").style.display = "none";
+          $("gamePanel").classList.add("playing");
+          $("gamePanel").classList.remove("finished");
           $("gamebar").classList.add("visible");
           $("readerWrap").classList.add("visible");
-          if ($("endDialog").open) $("endDialog").close();
           $("confettiLayer").replaceChildren();
           $("targetName").textContent = target;
           $("hopCount").textContent = "0";
@@ -435,16 +441,16 @@
       }
 
       function newGame() {
-        state.active = false; state.won = false; state.lost = false; state.requestId++;
+        state.active = false; state.won = false; state.lost = false; state.result = ""; state.requestId++;
         stopTimer();
+        $("gamebar").append($("restartBtn"));
         $("timerBar").style.width = "100%";
         $("timerBar").style.backgroundColor = "var(--success)";
+        $("gamePanel").classList.remove("playing", "finished");
         $("setup").style.display = "";
         $("gamebar").classList.remove("visible");
         $("readerWrap").classList.remove("visible");
-        if ($("endDialog").open) $("endDialog").close();
         $("confettiLayer").replaceChildren();
-        $("endDialog").classList.remove("lost");
         clearTimeout(state.confettiTimer);
         $("setupError").textContent = "";
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -454,13 +460,6 @@
       $("randomDst").addEventListener("click", () => fillRandom("dst"));
       $("startBtn").addEventListener("click", startGame);
       $("restartBtn").addEventListener("click", newGame);
-      $("closeEndBtn").addEventListener("click", newGame);
-      $("endDialog").addEventListener("keydown", event => {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          $("endDialog").close();
-        }
-      });
       bindAutocomplete("src", srcInput);
       bindAutocomplete("dst", dstInput);
 
