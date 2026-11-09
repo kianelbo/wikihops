@@ -6,7 +6,7 @@
       const state = {
         target: "", current: "", hops: 0,
         active: false, won: false, visited: [], requestId: 0,
-        suggestions: { src: [], dst: [] }, selected: { src: -1, dst: -1 },
+        suggestions: { src: [], dst: [] }, selected: { src: -1, dst: -1 }, audioContext: null, confettiTimer: 0,
         searchTimers: {}, searchControllers: {}, searchCache: new Map()
       };
 
@@ -267,7 +267,7 @@
           $("articleBody").replaceChildren(...Array.from(sanitizeAndPrepare(data.parse.text).childNodes));
           renderHistory();
           if (titleKey(canonical) === titleKey(state.target)) winGame();
-          $("articleBody").scrollIntoView({ behavior: "smooth", block: "start" });
+          window.scrollTo({ behavior: "smooth", top: 0 });
         } catch (error) {
           if (request !== state.requestId) return;
           if (isHop && state.current) {
@@ -296,16 +296,64 @@
           box.append(arrow, chip);
         });
       }
+
       function winGame() {
         state.won = true;
-        $("winBanner").classList.add("visible");
         $("winText").textContent = `You reached ${state.target} in ${state.hops} ${state.hops === 1 ? "hop" : "hops"}.`;
+        $("winDialog").showModal();
+        launchConfetti();
+        playWinSound();
         $("articleBody").querySelectorAll("a[data-wiki-title]").forEach(a => {
           a.removeAttribute("data-wiki-title");
           a.href = wikiUrl(a.textContent.trim() || state.target);
           a.target = "_blank"; a.rel = "noopener noreferrer";
         });
       }
+
+      function launchConfetti() {
+        if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        const layer = $("confettiLayer");
+        const colors = ["#e36a4f", "#386e83", "#e7bb55", "#32745e", "#8d6ca8"];
+        layer.replaceChildren(...Array.from({ length: 64 }, () => {
+          const piece = document.createElement("span");
+          piece.className = "confetti-piece";
+          piece.style.setProperty("--x", `${Math.random() * 100}vw`);
+          piece.style.setProperty("--drift", `${Math.random() * 240 - 120}px`);
+          piece.style.setProperty("--spin", `${Math.random() * 720 - 360}deg`);
+          piece.style.setProperty("--delay", `${Math.random() * 350}ms`);
+          piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          return piece;
+        }));
+        clearTimeout(state.confettiTimer);
+        state.confettiTimer = setTimeout(() => layer.replaceChildren(), 4500);
+      }
+
+      function prepareWinSound() {
+        if (!window.AudioContext) return;
+        state.audioContext ||= new window.AudioContext();
+        if (state.audioContext.state === "suspended") {
+          state.audioContext.resume().catch(error => console.warn("Couldn't enable the win sound.", error));
+        }
+      }
+
+      function playWinSound() {
+        const context = state.audioContext;
+        if (!context || context.state !== "running") return;
+        const now = context.currentTime;
+        const oscillator = context.createOscillator();
+        const volume = context.createGain();
+        oscillator.type = "triangle";
+        oscillator.frequency.setValueAtTime(523.25, now);
+        oscillator.frequency.setValueAtTime(659.25, now + 0.13);
+        oscillator.frequency.setValueAtTime(783.99, now + 0.26);
+        volume.gain.setValueAtTime(0.001, now);
+        volume.gain.exponentialRampToValueAtTime(0.16, now + 0.035);
+        volume.gain.exponentialRampToValueAtTime(0.001, now + 0.72);
+        oscillator.connect(volume).connect(context.destination);
+        oscillator.start(now);
+        oscillator.stop(now + 0.73);
+      }
+
       async function startGame() {
         $("setupError").textContent = "";
         $("startBtn").disabled = true;
@@ -318,7 +366,8 @@
           $("setup").style.display = "none";
           $("gamebar").classList.add("visible");
           $("readerWrap").classList.add("visible");
-          $("winBanner").classList.remove("visible");
+          if ($("winDialog").open) $("winDialog").close();
+          $("confettiLayer").replaceChildren();
           $("targetName").textContent = target;
           $("hopCount").textContent = "0";
           loadArticle(source, false);
@@ -329,12 +378,15 @@
           $("startBtn").textContent = "START";
         }
       }
+
       function newGame() {
         state.active = false; state.won = false; state.requestId++;
         $("setup").style.display = "";
         $("gamebar").classList.remove("visible");
         $("readerWrap").classList.remove("visible");
-        $("winBanner").classList.remove("visible");
+        if ($("winDialog").open) $("winDialog").close();
+        $("confettiLayer").replaceChildren();
+        clearTimeout(state.confettiTimer);
         $("setupError").textContent = "";
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
@@ -343,6 +395,13 @@
       $("randomDst").addEventListener("click", () => fillRandom("dst"));
       $("startBtn").addEventListener("click", startGame);
       $("restartBtn").addEventListener("click", newGame);
+      $("closeWinBtn").addEventListener("click", newGame);
+      $("winDialog").addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          $("winDialog").close();
+        }
+      });
       bindAutocomplete("src", srcInput);
       bindAutocomplete("dst", dstInput);
 
@@ -352,6 +411,7 @@
         event.preventDefault();
         const nextTitle = anchor.dataset.wikiTitle;
         if (!nextTitle || titleKey(nextTitle) === titleKey(state.current)) return;
+        prepareWinSound();
         loadArticle(nextTitle, true);
       });
 

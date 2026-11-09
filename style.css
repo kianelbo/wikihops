@@ -105,10 +105,39 @@ button:disabled { cursor: wait; opacity: .55; }
 .loading { padding: 55px 20px; color: #5b6572; text-align: center; }
 .spinner { width: 22px; height: 22px; margin: 0 auto 10px; border: 2px solid #dce2e7; border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.win-banner { display: none; margin: 0 0 15px; padding: 13px 16px; background: var(--success-soft); border: 2px dashed var(--success); border-radius: 10px 8px 11px 7px; }
-.win-banner.visible { display: block; }
-.win-banner strong { display: block; color: var(--success); font-size: 17px; }
-.win-banner span { color: #405b53; font-size: 12px; }
+.win-dialog {
+  position: relative;
+  width: min(440px, calc(100% - 32px));
+  padding: 0;
+  overflow: visible;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px dashed var(--line);
+  border-radius: 14px 10px 16px 11px;
+  box-shadow: 7px 7px 0 #292b3933;
+}
+.win-dialog[open] { animation: win-pop .24s ease-out both; }
+.win-dialog::backdrop { background: #20232f99; backdrop-filter: blur(3px); }
+.win-dialog-content { position: relative; z-index: 1; padding: 32px 28px 27px; text-align: center; }
+.win-spark { color: var(--coral); font-size: 45px; line-height: 1; animation: spark-pop .55s cubic-bezier(.2,1.8,.4,1) both; }
+.win-dialog h2 { margin: 10px 0 8px; font: bold 27px/1.15 Georgia, serif; }
+.win-dialog p { margin: 0 0 21px; color: var(--muted); font: italic 16px/1.45 Georgia, serif; }
+.confetti-layer { position: fixed; z-index: 2; inset: 0; overflow: hidden; pointer-events: none; }
+.confetti-piece {
+  position: absolute;
+  top: -18px;
+  left: var(--x);
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  animation: confetti-fall 3.2s cubic-bezier(.2,.65,.45,1) var(--delay) both;
+}
+.confetti-piece:nth-child(3n) { width: 7px; height: 7px; border-radius: 50%; }
+@keyframes win-pop { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes spark-pop { from { opacity: 0; transform: scale(.2) rotate(-35deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes confetti-fall {
+  to { transform: translate3d(var(--drift), 110vh, 0) rotate(var(--spin)); opacity: .8; }
+}
 .route-history { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 12px 0 0; color: var(--muted); font-size: 10px; }
 .route-history .chip { padding: 3px 7px; color: #505c6a; background: var(--surface); border: 1px dashed #aaa18e; border-radius: 6px; }
 .route-history .chip.current { color: var(--blue); border-color: var(--blue); font-weight: 700; }
@@ -233,6 +262,7 @@ button:disabled { cursor: wait; opacity: .55; }
   .target span { white-space: nowrap; }
   .target b { font-size: 13px; }
   .secondary { padding: 7px 8px; font-size: 10px; }
+  .win-dialog-content { padding: 28px 20px 22px; }
   .masthead p { max-width: 58%; }
   .article-top { padding: 15px 16px 0; }
   .article-top h2 { font-size: 26px; }
@@ -248,4 +278,8 @@ button:disabled { cursor: wait; opacity: .55; }
     max-width: 100% !important;
     margin: 0 0 1.1em !important;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .win-dialog[open], .win-spark, .confetti-piece { animation-duration: .01ms; }
 }

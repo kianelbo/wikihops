@@ -51,11 +51,6 @@
       <button class="secondary" id="restartBtn" type="button">New game</button>
     </section>
 
-    <div class="win-banner" id="winBanner" aria-live="polite">
-      <strong>Destination reached.</strong>
-      <span id="winText">You made it.</span>
-    </div>
-
     <section class="reader-wrap" id="readerWrap">
       <article class="article-card">
         <div class="article-top">
@@ -69,6 +64,16 @@
       </article>
       <div class="route-history" id="routeHistory"></div>
     </section>
+
+    <dialog class="win-dialog" id="winDialog" aria-labelledby="winHeading" aria-describedby="winText">
+      <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+      <div class="win-dialog-content">
+        <div class="win-spark" aria-hidden="true">✦</div>
+        <h2 id="winHeading">Destination reached!</h2>
+        <p id="winText"></p>
+        <button class="primary" id="closeWinBtn" type="button">New Game</button>
+      </div>
+    </dialog>
 
     <footer class="foot">Wikipedia content · CC BY-SA. <a href="https://en.wikipedia.org/wiki/Wikipedia:Reusing_Wikipedia_content" target="_blank" rel="noopener noreferrer">Reuse & attribution details</a>. Wikihops is not affiliated with the Wikimedia Foundation.</footer>
   </main>
