@@ -1,7 +1,7 @@
 (() => {
       "use strict";
       const API = "https://en.wikipedia.org/w/api.php";
-      const GAME_DURATION = 60;
+      const GAME_DURATION = 90;
       const $ = (id) => document.getElementById(id);
       const srcInput = $("srcInput");
       const dstInput = $("dstInput");
@@ -397,6 +397,7 @@
         state.result = result;
         renderHistory();
         playSound(frequencies);
+        window.scrollTo({ behavior: "instant", top: 0 });
       }
 
       function updateTimer() {
