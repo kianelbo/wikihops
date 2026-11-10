@@ -3,6 +3,7 @@
    ========================================================= */
 :root {
   color-scheme: light;
+
   --paper: #f7f0dd;
   --surface: #fffdf5;
   --ink: #292b39;
@@ -421,6 +422,7 @@ button:disabled {
 @keyframes confetti-fall {
   to { transform: translate3d(var(--drift), 110vh, 0) rotate(var(--spin)); opacity: .8; }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .confetti-piece { animation-duration: .01ms; }
 }
@@ -670,6 +672,7 @@ button:disabled {
   font-size: 88%;
   line-height: 1.4;
 }
+
 .article-body table.sidebar td,
 .article-body table.sidebar th {
   padding: .2em .4em;

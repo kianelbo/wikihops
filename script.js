@@ -61,7 +61,7 @@
         try {
           input.value = await randomArticle();
           hideSuggestions(which);
-        } catch (error) {
+        } catch {
           $("setupError").textContent = "Couldn't get a random page. Please try again.";
         } finally {
           button.disabled = false;
@@ -84,7 +84,7 @@
           box.classList.remove("open");
           return;
         }
-        results.forEach((item, index) => {
+        results.forEach((item) => {
           const button = document.createElement("button");
           button.type = "button";
           button.className = "suggestion";
@@ -210,7 +210,7 @@
         if (/^(data:|blob:|https?:)/i.test(trimmed)) return trimmed;
         try {
           return new URL(trimmed, "https://en.wikipedia.org/").href;
-        } catch (_) {
+        } catch {
           return trimmed;
         }
       }
@@ -245,10 +245,12 @@
           if (!href) return;
           if (href.startsWith("/wiki/")) {
             const raw = href.slice(6).split("#")[0];
-            let title = raw;
+            let title;
             try {
               title = decodeURIComponent(raw).replace(/_/g, " ");
-            } catch (_) {}
+            } catch {
+              title = raw.replace(/_/g, " ");
+            }
             if (!title.includes(":")) {
               a.dataset.wikiTitle = title;
               a.href = "#";
