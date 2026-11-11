@@ -324,7 +324,6 @@
           $("hopCount").textContent = state.hops;
           $("articleTitle").textContent = canonical;
           $("readerMessage").textContent = "";
-          $("sourceLink").href = wikiUrl(canonical);
           $("articleBody").replaceChildren(...Array.from(sanitizeAndPrepare(data.parse.text).childNodes));
           renderHistory();
           if (titleKey(canonical) === titleKey(state.target)) winGame();

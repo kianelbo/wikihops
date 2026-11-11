@@ -337,29 +337,6 @@ button:disabled {
   background: #fffdf8;
 }
 
-.article-top .wiki-tag {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: #72777d;
-  font-size: 10px;
-  letter-spacing: .11em;
-  text-transform: uppercase;
-}
-
-.article-top .wiki-tag a {
-  color: #54595d;
-  font-weight: 600;
-  text-decoration: none;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.article-top .wiki-tag a:hover {
-  color: var(--blue);
-  text-decoration: underline;
-}
-
 .article-top h2 {
   margin: 7px 0 15px;
   color: #202122;
