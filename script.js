@@ -314,7 +314,6 @@
             disabletoc: 0,
             formatversion: 2
           });
-          updateTimer();
           if (request !== state.requestId || !state.active) return;
           const canonical = data.parse.title;
           state.current = canonical;
@@ -327,6 +326,7 @@
           $("readerMessage").textContent = "";
           $("articleBody").replaceChildren(...Array.from(sanitizeAndPrepare(data.parse.text).childNodes));
           renderHistory();
+          if (!isHop) startTimer();
           if (titleKey(canonical) === titleKey(state.target)) winGame();
           window.scrollTo({ behavior: "smooth", top: 0 });
         } catch (error) {
@@ -510,7 +510,6 @@
           $("targetName").textContent = target;
           $("hopCount").textContent = "0";
           renderHistory();
-          startTimer();
           loadArticle(source, false);
         } catch (error) {
           $("setupError").textContent = error.message || "Something went wrong. Please try again.";
