@@ -19,6 +19,7 @@
         selected: { src: -1, dst: -1 },
         audioContext: null,
         confettiTimer: 0,
+        newGameConfirmationTimer: 0,
         timerInterval: 0,
         timerStarted: 0,
         searchTimers: {},
@@ -424,6 +425,14 @@
         state.timerInterval = 0;
       }
 
+      function resetNewGameConfirmation() {
+        clearTimeout(state.newGameConfirmationTimer);
+        state.newGameConfirmationTimer = 0;
+        const restartBtn = $("restartBtn");
+        restartBtn.classList.remove("confirming");
+        restartBtn.textContent = "New game";
+      }
+
       function launchConfetti() {
         if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
         const layer = $("confettiLayer");
@@ -475,6 +484,7 @@
 
       async function startGame() {
         $("setupError").textContent = "";
+        resetNewGameConfirmation();
         $("startBtn").disabled = true;
         $("startBtn").textContent = "SETTING UP…";
         try {
@@ -517,6 +527,7 @@
         state.result = "";
         state.requestId++;
         stopTimer();
+        resetNewGameConfirmation();
         $("gamebar").append($("restartBtn"));
         $("timerBar").style.width = "100%";
         $("timerBar").style.backgroundColor = "var(--success)";
@@ -533,7 +544,16 @@
       $("randomSrc").addEventListener("click", () => fillRandom("src"));
       $("randomDst").addEventListener("click", () => fillRandom("dst"));
       $("startBtn").addEventListener("click", startGame);
-      $("restartBtn").addEventListener("click", newGame);
+      $("restartBtn").addEventListener("click", () => {
+        const restartBtn = $("restartBtn");
+        if (restartBtn.classList.contains("confirming")) {
+          newGame();
+          return;
+        }
+        restartBtn.classList.add("confirming");
+        restartBtn.textContent = "Confirm?";
+        state.newGameConfirmationTimer = setTimeout(resetNewGameConfirmation, 3000);
+      });
       bindAutocomplete("src", srcInput);
       bindAutocomplete("dst", dstInput);
 
