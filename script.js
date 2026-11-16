@@ -545,7 +545,7 @@
       $("startBtn").addEventListener("click", startGame);
       $("restartBtn").addEventListener("click", () => {
         const restartBtn = $("restartBtn");
-        if (restartBtn.classList.contains("confirming")) {
+        if (restartBtn.classList.contains("confirming") || state.won || state.lost) {
           newGame();
           return;
         }
