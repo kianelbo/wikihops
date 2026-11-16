@@ -90,14 +90,31 @@
           button.type = "button";
           button.className = "suggestion";
           button.setAttribute("role", "option");
+          const thumbnail = document.createElement("span");
+          thumbnail.className = "suggestion-thumbnail";
+          if (item.thumbnail) {
+            const image = document.createElement("img");
+            image.src = item.thumbnail;
+            image.alt = "";
+            image.loading = "lazy";
+            image.addEventListener("error", () => thumbnail.classList.add("unavailable"), { once: true });
+            thumbnail.append(image);
+          } else {
+            thumbnail.classList.add("unavailable");
+          }
+          button.append(thumbnail);
+          const details = document.createElement("span");
+          details.className = "suggestion-details";
           const title = document.createElement("span");
+          title.className = "suggestion-title";
           title.textContent = item.title;
-          button.append(title);
+          details.append(title);
           if (item.description) {
             const desc = document.createElement("small");
             desc.textContent = item.description;
-            button.append(desc);
+            details.append(desc);
           }
+          button.append(details);
           button.addEventListener("mousedown", (event) => event.preventDefault());
           button.addEventListener("click", () => {
             (which === "src" ? srcInput : dstInput).value = item.title;
@@ -124,14 +141,18 @@
           const data = await api({
             action: "query", generator: "search", gsrsearch: query,
             gsrnamespace: 0, gsrlimit: 8,
-            prop: "pageprops", ppprop: "disambiguation|wikibase-shortdesc"
+            prop: "pageprops|pageimages",
+            ppprop: "disambiguation|wikibase-shortdesc",
+            piprop: "thumbnail",
+            pithumbsize: 96
           }, controller.signal);
           const results = Object.values(data.query.pages || {})
             .sort((a, b) => a.index - b.index)
             .filter(page => !Object.prototype.hasOwnProperty.call(page.pageprops || {}, "disambiguation"))
             .map(page => ({
               title: page.title,
-              description: page.pageprops?.["wikibase-shortdesc"] || ""
+              description: page.pageprops?.["wikibase-shortdesc"] || "",
+              thumbnail: page.thumbnail?.source || ""
             }));
           if ((which === "src" ? srcInput : dstInput).value.trim() !== query.trim()) return;
           if (state.searchCache.size === 40) state.searchCache.delete(state.searchCache.keys().next().value);
