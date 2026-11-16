@@ -331,26 +331,25 @@ button:disabled {
   overflow: hidden;
   color: #202122;
   background: #fff;
-  border: 2px solid #a9a18f;
-  border-radius: 10px 8px 12px 7px;
-  box-shadow: 4px 4px 0 #292b391c;
 }
 
 .article-top {
-  padding: 17px 26px 0;
-  background: #fffdf8;
+  padding: 0 24px;
+  background: #fff;
 }
 
 .article-top h2 {
-  margin: 7px 0 15px;
+  margin: 0;
+  padding-bottom: 5px;
   color: #202122;
-  font: normal 31px/1.2 Georgia, "Times New Roman", serif;
+  border-bottom: 1px solid #a2a9b1;
+  font: normal 30px/1.3 "Linux Libertine", Georgia, "Times New Roman", serif;
 }
 
 .reader-message {
-  margin: -8px 0 12px;
+  margin: 8px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font: 12px/1.5 Arial, Helvetica, sans-serif;
 }
 
 .reader-message:empty {
@@ -495,9 +494,9 @@ button:disabled {
    #articleBody. Keep these rules scoped to .article-body.
    ========================================================= */
 .article-body {
-  padding: 20px 30px 34px;
+  padding: 12px 24px 34px;
   color: #202122;
-  font: 14px/1.68 Arial, Helvetica, sans-serif;
+  font: 14px/1.6 Arial, Helvetica, sans-serif;
   overflow-wrap: anywhere;
 }
 
@@ -519,21 +518,25 @@ button:disabled {
 }
 
 .article-body h2 {
-  margin: 1.3em 0 .5em;
+  margin: 1.4em 0 .5em;
   padding-bottom: 4px;
   border-bottom: 1px solid #a2a9b1;
-  font: normal 22px/1.3 Georgia, serif;
+  font: normal 21px/1.3 "Linux Libertine", Georgia, serif;
 }
 
 .article-body h3 {
   margin: 1.2em 0 .4em;
-  font: bold 17px/1.3 Georgia, serif;
+  font: bold 17px/1.3 "Linux Libertine", Georgia, serif;
 }
 
 .article-body table {
   max-width: 100%;
   border-collapse: collapse;
   font-size: 12px;
+}
+
+.article-body th {
+  background: #eaecf0;
 }
 
 .article-body th,
@@ -543,6 +546,17 @@ button:disabled {
 }
 
 .article-body img {
+  max-width: 100%;
+  height: auto;
+}
+
+.article-body table a.mw-file-description {
+  display: block;
+  text-align: center;
+}
+
+.article-body table a.mw-file-description img {
+  display: inline-block;
   max-width: 100%;
   height: auto;
 }
@@ -834,16 +848,17 @@ button:disabled {
   }
 
   .article-top {
-    padding: 15px 16px 0;
+    padding: 0 14px;
   }
 
   .article-top h2 {
-    font-size: 26px;
+    margin-top: 14px;
+    font-size: 27px;
   }
 
   /* Wikipedia article responsive adjustments */
   .article-body {
-    padding: 14px 16px 25px;
+    padding: 12px 14px 25px;
     font-size: 14px;
   }
 
